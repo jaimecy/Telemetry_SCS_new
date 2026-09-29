@@ -36,6 +36,8 @@ Salida: `build\Release\scs_telemetry_jaime.dll` y copia en `Win64\`.
 
 El juego publica `car_job` y eventos `car_job.delivered` / `car_job.cancelled`. Este plugin los trata como un job normal (`onJob`, ciudades, carga, etc.). La config `car` rellena marca/matrícula en los campos de vehículo.
 
+**Estado:** el plugin de telemetría **está siendo revisado** frente a los distintos tipos de trabajos de Road Trip (entregas, encargos de conducción, quick jobs, etc.). El soporte puede ampliarse o corregirse según lo que se compruebe en partida.
+
 ## Licencias
 
 - Headers SCS SDK: `scs_sdk/sdk_license.txt` (MIT, SCS Software).
