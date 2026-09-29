@@ -1,0 +1,4 @@
+LIBRARY scs_telemetry_jaime
+EXPORTS
+scs_telemetry_init=scs_telemetry_init
+scs_telemetry_shutdown=scs_telemetry_shutdown

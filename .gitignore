@@ -1,0 +1,12 @@
+build/
+scs_telemetry_jaime/vs2012/x64/
+scs_telemetry_jaime/vs2012/Release/
+scs_telemetry_jaime/vs2012/Debug/
+*.obj
+*.exp
+*.lib
+*.pdb
+*.user
+*.suo
+# DLL precompilada en Win64/ sí se versiona para usuarios finales
+!Win64/*.dll
