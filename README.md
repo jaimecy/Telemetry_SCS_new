@@ -7,7 +7,7 @@ Plugin de telemetría SCS para **Euro Truck Simulator 2** y **American Truck Sim
 | **DLL** | `scs_telemetry_jaime.dll` |
 | **Memoria compartida** | `Local\SCSTelemetry` (rev **12**) |
 | **SDK** | SCS **1.14** (headers incluidos en `scs_sdk/`) |
-| **Extra** | Soporte **ATS Road Trip** (`car_job` / `car`) |
+| **Extra** | Soporte **ATS Road Trip** (`car_job` / `bus_job` / `car` / `bus`) |
 
 Compatible con lectores que esperan el layout RenCloud (p. ej. TruckHUD / `truck-telemetry`).
 
@@ -34,9 +34,13 @@ Salida: `build\Release\scs_telemetry_jaime.dll` y copia en `Win64\`.
 
 ## Road Trip (ATS)
 
-El juego publica `car_job` y eventos `car_job.delivered` / `car_job.cancelled`. Este plugin los trata como un job normal (`onJob`, ciudades, carga, etc.). La config `car` rellena marca/matrícula en los campos de vehículo.
+El juego publica encargos de coche/bus aparte del `job` de camión:
 
-**Estado:** el plugin de telemetría **está siendo revisado** frente a los distintos tipos de trabajos de Road Trip (entregas, encargos de conducción, quick jobs, etc.). El soporte puede ampliarse o corregirse según lo que se compruebe en partida.
+- Configs: `car_job`, `bus_job` (y vehículo `car` / `bus`)
+- Eventos: `car_job.delivered` / `car_job.cancelled` (y equivalentes `bus_job.*`)
+- Mercado: atributo `car_job.market` / `bus_job.market` (`quick_job`, `dispatch_job`, …)
+
+Se tratan como un job normal (`onJob`, ciudades, carga, distancia planificada, etc.). Un `job` vacío de camión **no** apaga un `car_job`/`bus_job` activo (y al revés).
 
 ## Licencias
 

@@ -124,6 +124,13 @@ const scsConfigHandler_t job_config[] = {
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_delivery_time, handleJobDeliveryTime},
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_is_cargo_loaded, handleJobIsCargoLoaded},
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_job_market, handleJobJobMarket},
+    // Road Trip: el mercado va en car_job.market / bus_job.market (no en job.market).
+    {"car_job.market", handleJobJobMarket},
+    {"bus_job.market", handleJobJobMarket},
+    // Prioridades de cliente Road Trip (ignoradas a propósito; evita spam en log).
+    {"customer.prio.cargo", handleJobIgnoreBool},
+    {"customer.prio.time", handleJobIgnoreBool},
+    {"customer.prio.vehicle", handleJobIgnoreBool},
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_special_job, handleJobSpecialJob},
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_cargo_unit_count, handleJobUnitCount},
     {SCS_TELEMETRY_CONFIG_ATTRIBUTE_cargo_unit_mass, handleJobUnitMass},
@@ -651,7 +658,14 @@ scsConfigHandle(Job, IsCargoLoaded) {
 }
 
 scsConfigHandle(Job, JobMarket) {
-  strncpy(telem_ptr->config_s.jobMarket, current->value.value_string.value, 20);
+  strncpy(telem_ptr->config_s.jobMarket, current->value.value_string.value, 31);
+  telem_ptr->config_s.jobMarket[31] = '\0';
+}
+
+scsConfigHandle(Job, IgnoreBool) {
+  // Atributos Road Trip sin campo en el mapa compartido.
+  (void)current;
+  (void)trailer_id;
 }
 
 scsConfigHandle(Job, SpecialJob) {

@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdarg>
+#include <cstdio>
+#include <cstring>
 #include <string>
 // SDK
 #include "amtrucks/scssdk_ats.h"
@@ -349,6 +351,9 @@ static auto clear_tollgate_ticker = 0;
 static auto clear_ferry_ticker = 0;
 static auto clear_train_ticker = 0;
 static auto clear_refuel_payed_ticker = 0;
+// Road Trip: el juego puede emitir config `job` vacía junto a `car_job` con datos.
+// Hay que recordar de qué origen viene el encargo activo para no apagar onJob.
+static bool active_job_from_car = false;
 
 // TODO: REWORK BOTH CLEAN FUNCTION AND ADD MORE FOR SINGLE CONFIG attribute
 //  Function: set_job_values_zero
@@ -523,23 +528,29 @@ SCSAPI_VOID telemetry_gameplay(const scs_event_t event,
   const bool is_job_cancelled =
       strcmp(info->id, SCS_TELEMETRY_GAMEPLAY_EVENT_job_cancelled) == 0 ||
       strcmp(info->id,
-             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_cancelled) == 0;
+             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_cancelled) == 0 ||
+      strcmp(info->id,
+             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_bus_job_cancelled) == 0;
   const bool is_job_delivered =
       strcmp(info->id, SCS_TELEMETRY_GAMEPLAY_EVENT_job_delivered) == 0 ||
       strcmp(info->id,
-             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_delivered) == 0;
+             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_delivered) == 0 ||
+      strcmp(info->id,
+             TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_bus_job_delivered) == 0;
   if (is_job_cancelled) {
     type = cancelled;
     telem_ptr->special_b.jobCancelled ^= true;
     telem_ptr->gameplay_ui.jobFinishedTime = telem_ptr->common_ui.time_abs;
     telem_ptr->special_b.onJob = false;
     telem_ptr->special_b.jobFinished ^= true;
+    active_job_from_car = false;
   } else if (is_job_delivered) {
     type = delivered;
     telem_ptr->special_b.jobDelivered ^= true;
     telem_ptr->gameplay_ui.jobFinishedTime = telem_ptr->common_ui.time_abs;
     telem_ptr->special_b.onJob = false;
     telem_ptr->special_b.jobFinished ^= true;
+    active_job_from_car = false;
   } else if (strcmp(info->id, SCS_TELEMETRY_GAMEPLAY_EVENT_player_fined) == 0) {
     type = fined;
     telem_ptr->special_b.fined ^= true;
@@ -591,6 +602,7 @@ SCSAPI_VOID telemetry_configuration(const scs_event_t event,
   // check which type the event has
   configType type = {};
   bool is_job_config = false;
+  bool is_car_job_config = false;
   if (strcmp(info->id, SCS_TELEMETRY_CONFIG_substances) == 0) {
     type = substances;
   } else if (strcmp(info->id, SCS_TELEMETRY_CONFIG_controls) == 0) {
@@ -599,14 +611,17 @@ SCSAPI_VOID telemetry_configuration(const scs_event_t event,
     type = hshifter;
   } else if (strcmp(info->id, SCS_TELEMETRY_CONFIG_truck) == 0) {
     type = truck;
-  } else if (strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_car) == 0) {
+  } else if (strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_car) == 0 ||
+             strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_bus) == 0) {
     type = truck;
   } else if (strcmp(info->id, SCS_TELEMETRY_CONFIG_job) == 0) {
     type = job;
     is_job_config = true;
-  } else if (strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_car_job) == 0) {
+  } else if (strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_car_job) == 0 ||
+             strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_bus_job) == 0) {
     type = job;
     is_job_config = true;
+    is_car_job_config = true;
   } else {
     // check if it is trailer with backwards compatibility
     if (check_max_version(13, 0)) {
@@ -657,14 +672,40 @@ SCSAPI_VOID telemetry_configuration(const scs_event_t event,
     is_empty = false;
   }
   // if id of config is "job" / "car_job" but without element and we are on a job
-  // -> we finished it now
+  // -> we finished it now. En Road Trip no apagar un car_job por un `job` vacío
+  // (ni al revés): el juego emite ambos ids.
   if (is_job_config && is_empty && telem_ptr->special_b.onJob) {
-    telem_ptr->special_b.onJob = false;
-    telem_ptr->special_b.jobFinished ^= true;
-  } else if (!telem_ptr->special_b.onJob && is_job_config && !is_empty) {
-    // oh hey no job but now we have fields in this array so we start a new job
-    telem_ptr->special_b.onJob = true;
-    telem_ptr->gameplay_ui.jobStartingTime = telem_ptr->common_ui.time_abs;
+    if (is_car_job_config == active_job_from_car) {
+      telem_ptr->special_b.onJob = false;
+      telem_ptr->special_b.jobFinished ^= true;
+      active_job_from_car = false;
+    }
+  } else if (is_job_config && !is_empty) {
+    if (!telem_ptr->special_b.onJob) {
+      // oh hey no job but now we have fields in this array so we start a new job
+      telem_ptr->special_b.onJob = true;
+      telem_ptr->gameplay_ui.jobStartingTime = telem_ptr->common_ui.time_abs;
+    }
+    active_job_from_car = is_car_job_config;
+    // Road Trip: car_job.market suele ser quick_job/dispatch_job (sin "car").
+    // Prefijar para que el HUD lo detecte como encargo de coche/bus.
+    if (is_car_job_config) {
+      const bool is_bus =
+          strcmp(info->id, TRUCKHUD_SCS_TELEMETRY_CONFIG_bus_job) == 0;
+      const char* prefix = is_bus ? "bus_" : "car_";
+      if (telem_ptr->config_s.jobMarket[0] == '\0') {
+        strncpy(telem_ptr->config_s.jobMarket, is_bus ? "bus_job" : "car_job",
+                31);
+        telem_ptr->config_s.jobMarket[31] = '\0';
+      } else if (strstr(telem_ptr->config_s.jobMarket, "car") == nullptr &&
+                 strstr(telem_ptr->config_s.jobMarket, "bus") == nullptr) {
+        char tagged[32] = {};
+        snprintf(tagged, sizeof(tagged), "%s%s", prefix,
+                 telem_ptr->config_s.jobMarket);
+        strncpy(telem_ptr->config_s.jobMarket, tagged, 31);
+        telem_ptr->config_s.jobMarket[31] = '\0';
+      }
+    }
   }
 }
 

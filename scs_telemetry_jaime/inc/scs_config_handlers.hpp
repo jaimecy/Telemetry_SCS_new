@@ -114,6 +114,7 @@ scsConfigHandle(Job, Income);
 scsConfigHandle(Job, DeliveryTime);
 scsConfigHandle(Job, IsCargoLoaded);
 scsConfigHandle(Job, JobMarket);
+scsConfigHandle(Job, IgnoreBool);
 scsConfigHandle(Job, SpecialJob);
 scsConfigHandle(Job, UnitCount);
 scsConfigHandle(Job, UnitMass);

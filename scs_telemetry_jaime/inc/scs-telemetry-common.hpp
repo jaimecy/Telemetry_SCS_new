@@ -11,11 +11,15 @@
 // Compilado contra el paquete oficial SCS SDK 1.14 (TruckHUD scs_telemetry_plugin).
 #define TRUCKHUD_SCS_SDK_PACKAGE_VERSION	"1.14"
 
-// ATS Road Trip / modo coche (no documentado en scssdk_telemetry_common_configs.h 1.14).
+// ATS Road Trip / modo coche-bus (no documentado en scssdk_telemetry_common_configs.h 1.14).
 #define TRUCKHUD_SCS_TELEMETRY_CONFIG_car_job                    "car_job"
+#define TRUCKHUD_SCS_TELEMETRY_CONFIG_bus_job                    "bus_job"
 #define TRUCKHUD_SCS_TELEMETRY_CONFIG_car                        "car"
+#define TRUCKHUD_SCS_TELEMETRY_CONFIG_bus                        "bus"
 #define TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_cancelled  "car_job.cancelled"
 #define TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_car_job_delivered  "car_job.delivered"
+#define TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_bus_job_cancelled  "bus_job.cancelled"
+#define TRUCKHUD_SCS_TELEMETRY_GAMEPLAY_EVENT_bus_job_delivered  "bus_job.delivered"
 
 #define ETS2                            1
 #define ATS                             2
